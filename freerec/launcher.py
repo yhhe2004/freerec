@@ -1017,12 +1017,13 @@ class Adapter:
         self.cfg = cfg
         piece = "\t{key}: {vals} \n"
         envs, params, defaults = "", "", ""
+        tune_only = set(getattr(self.cfg, "TUNE_ONLY_ENVS", ()))
         for key, val in self.cfg.ENVS.items():
             if key == "device":
                 self.devices = tuple(val.split(","))
-            else:
+            elif key not in tune_only:
                 self.cfg.COMMAND += self.get_option(key, val)
-            envs += piece.format(key=key, vals=val)
+            envs += piece.format(key=key, vals="***" if key == "api_key" else val)
         for key, vals in self.cfg.PARAMS.items():
             if isinstance(vals, (str, int, float)):
                 vals = [vals]

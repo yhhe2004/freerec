@@ -72,13 +72,30 @@ def tune(args):
     #
     from .launcher import Adapter
     from .parser import CoreParser
+    from .tune.planner import is_grouped_params
+    from .tune.sequential import SequentialTuner
 
     cfg = CoreParser()
     cfg.compile(args)
 
-    tuner = Adapter()
+    use_sequential = is_grouped_params(cfg.PARAMS) or any(
+        key in cfg.ENVS for key in ("llm_analyzer", "analyze_metric")
+    )
+    tuner = SequentialTuner() if use_sequential else Adapter()
     tuner.compile(cfg)
     tuner.fit()
+
+
+def vistune(args):
+    r"""Open a local browser view for sequential tune sessions."""
+    from .tune.web import serve_vistune
+
+    serve_vistune(
+        args.description,
+        session_id=args.session,
+        port=args.port,
+        open_browser=not args.no_open,
+    )
 
 
 def make(args):
@@ -232,6 +249,13 @@ def main():
         default=False,
         help="resume the search from the recent checkpoint",
     )
+
+    vistune_parser = subparsers.add_parser("vistune")
+    vistune_parser.set_defaults(func=vistune)
+    vistune_parser.add_argument("description", type=str, help="experiment name")
+    vistune_parser.add_argument("--session", type=str, default=None)
+    vistune_parser.add_argument("--port", type=int, default=8765)
+    vistune_parser.add_argument("--no-open", action="store_true", default=False)
 
     make_parser = subparsers.add_parser("make")
     make_parser.set_defaults(func=make)

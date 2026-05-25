@@ -89,7 +89,16 @@ CHECKPOINT_PATH = "./infos/{description}/{dataset}/{device}"
 LOG_PATH = "./logs/{description}/{dataset}/{id}"
 CORE_CHECKPOINT_PATH = "./infos/{description}/core"
 CORE_LOG_PATH = "./logs/{description}/core"
+TUNE_LOG_PATH = "./logs/{description}/tune/{session_id}"
 TIME = "%m%d%H%M%S"
+TUNE_ONLY_ENVS = (
+    "llm_analyzer",
+    "api_key",
+    "analyze_metric",
+    "curve_sample_points",
+    "max_expand_rounds",
+    "llm_model",
+)
 
 CONFIG = Config(
     # path|file
@@ -109,8 +118,11 @@ CONFIG = Config(
 
 CORE_CONFIG = Config(
     MONITOR_BEST_FILENAME=CONFIG.MONITOR_BEST_FILENAME,
+    MONITOR_FILENAME=CONFIG.MONITOR_FILENAME,
     CHECKPOINT_FILENAME=CONFIG.CHECKPOINT_FILENAME,
     RESULTS_FILENAME=CONFIG.RESULTS_FILENAME,
+    TUNE_ONLY_ENVS=TUNE_ONLY_ENVS,
+    TUNE_LOG_PATH=TUNE_LOG_PATH,
     EXCLUSIVE=False,
     COMMAND=None,
     ENVS=dict(),
@@ -644,6 +656,7 @@ class CoreParser(Config):
         self["LOG_PATH"] = LOG_PATH
         self["CORE_CHECKPOINT_PATH"] = CORE_CHECKPOINT_PATH.format(**self.ENVS)
         self["CORE_LOG_PATH"] = CORE_LOG_PATH.format(**self.ENVS)
+        self["TUNE_LOG_PATH"] = TUNE_LOG_PATH
         mkdirs(self.CORE_CHECKPOINT_PATH, self.CORE_LOG_PATH)
         set_logger(
             path=self.CORE_LOG_PATH,
@@ -670,6 +683,8 @@ class CoreParser(Config):
         info += "|  Attribute   |   Value   |\n"
         info += "| :-------------: | :-----------: |\n"
         for key, val in self.ENVS.items():
+            if key == "api_key":
+                val = "***"
             info += s.format(key=key, val=val)
         for key, val in self.PARAMS.items():
             info += s.format(key=key, val=val)
